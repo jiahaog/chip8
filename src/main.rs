@@ -142,7 +142,7 @@ fn main() {
         pc += 2;
 
         match opcode {
-            Opcode::Sys(addr) => unimplemented!("SYS {addr} is unimplemented"),
+            Opcode::Sys { nnn } => unimplemented!("SYS {nnn} is unimplemented"),
             Opcode::Clear => {
                 screen.clear();
             }
@@ -150,12 +150,12 @@ fn main() {
                 let addr = stack.pop().unwrap();
                 pc = addr;
             }
-            Opcode::Jump(nnn) => {
+            Opcode::Jump { nnn } => {
                 pc = nnn;
             }
-            Opcode::Call(addr) => {
+            Opcode::Call { nnn } => {
                 stack.push(pc);
-                pc = addr;
+                pc = nnn;
             }
             Opcode::Load { vx, nn } => {
                 registers[vx as usize] = nn;
@@ -206,15 +206,15 @@ fn from_u8_rgb(r: u8, g: u8, b: u8) -> u32 {
 #[derive(Debug)]
 enum Opcode {
     /// 0NNN
-    Sys(u16),
+    Sys { nnn: u16 },
     /// 00E0
     Clear,
     /// 00EE
     Return,
     /// 1NNN
-    Jump(u16),
+    Jump { nnn: u16 },
     /// 2NNN
-    Call(u16),
+    Call { nnn: u16 },
     /// 3XNN
     SkipEqualsConstant { vx: u8, nn: u8 },
     /// 4XNN
@@ -305,9 +305,9 @@ impl Opcode {
         match (ins, x, y, n, nn, nnn) {
             (0x0, 0, 0xE, 0, _, _) => Opcode::Clear,
             (0x0, 0, 0xE, 0xE, _, _) => Opcode::Return,
-            (0x0, _, _, _, _, nnn) => Opcode::Sys(nnn),
-            (0x1, _, _, _, _, nnn) => Opcode::Jump(nnn),
-            (0x2, _, _, _, _, nnn) => Opcode::Call(nnn),
+            (0x0, _, _, _, _, nnn) => Opcode::Sys { nnn },
+            (0x1, _, _, _, _, nnn) => Opcode::Jump { nnn },
+            (0x2, _, _, _, _, nnn) => Opcode::Call { nnn },
             (0x6, x, _, _, nn, _) => Opcode::Load { vx: x, nn },
             (0x7, x, _, _, nn, _) => Opcode::AddConstant { vx: x, nn },
             (0xA, _, _, _, _, nnn) => Opcode::LoadIndex { nnn },
