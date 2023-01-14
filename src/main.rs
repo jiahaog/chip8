@@ -3,6 +3,7 @@ extern crate minifb;
 use std::{env, fs};
 
 use minifb::{Key, Scale, Window, WindowOptions};
+use rand::{rngs::StdRng, Rng, SeedableRng};
 
 const WIDTH: usize = 64;
 
@@ -13,7 +14,9 @@ const HEIGHT: usize = 32;
 /// For some reason, it is popular to put the font from `050 - 09F`.
 const FONT_OFFSET: usize = 050;
 
-const FONTS: [u8; 5 * 16] = [
+const FONT_SIZE: usize = 5;
+
+const FONTS: [u8; FONT_SIZE * 16] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
     0x20, 0x60, 0x20, 0x20, 0x70, // 1
     0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
@@ -102,7 +105,9 @@ fn main() {
     let rom = fs::read(rom_path).unwrap();
 
     let mut memory: [u8; MEMORY_SIZE] = [0; MEMORY_SIZE];
-    copy_into_array(&mut memory, rom.as_slice(), ROM_LOAD_OFFSET);
+    // copy_into_array(&mut memory, rom.as_slice(), ROM_LOAD_OFFSET);
+
+    memory[ROM_LOAD_OFFSET..(ROM_LOAD_OFFSET + rom.len())].copy_from_slice(rom.as_slice());
 
     FONTS
         .into_iter()
@@ -120,6 +125,8 @@ fn main() {
     let mut sound_timer: u8 = u8::MAX;
 
     let mut registers: [u8; 16] = [0; 16];
+
+    let mut rng = StdRng::seed_from_u64(1);
 
     let mut window = Window::new(
         "Test - ESC to exit",
@@ -157,18 +164,107 @@ fn main() {
                 stack.push(pc);
                 pc = nnn;
             }
+            Opcode::SkipEqualsConstant { vx, nn } => {
+                let x = registers[vx as usize];
+                if x == nn {
+                    pc += 2;
+                }
+            }
+            Opcode::SkipNotEqualsConstant { vx, nn } => {
+                let x = registers[vx as usize];
+                if x != nn {
+                    pc += 2;
+                }
+            }
+            Opcode::SkipEquals { vx, vy } => {
+                let x = registers[vx as usize];
+                let y = registers[vy as usize];
+                if x == y {
+                    pc += 2;
+                }
+            }
             Opcode::Load { vx, nn } => {
                 registers[vx as usize] = nn;
             }
             Opcode::AddConstant { vx, nn } => {
                 registers[vx as usize] += nn;
             }
+            Opcode::LoadRegister { vx, vy } => {
+                registers[vx as usize] = registers[vy as usize];
+            }
+            Opcode::Or { vx, vy } => {
+                let x = registers[vx as usize];
+                let y = registers[vy as usize];
+                registers[vx as usize] = x | y;
+            }
+            Opcode::And { vx, vy } => {
+                let x = registers[vx as usize];
+                let y = registers[vy as usize];
+                registers[vx as usize] = x & y;
+            }
+            Opcode::Xor { vx, vy } => {
+                let x = registers[vx as usize];
+                let y = registers[vy as usize];
+                registers[vx as usize] = x ^ y;
+            }
+            Opcode::Add { vx, vy } => {
+                let x = registers[vx as usize];
+                let y = registers[vy as usize];
+                let (result, carry) = x.overflowing_add(y);
+                registers[0xF] = carry as u8;
+                registers[vx as usize] = result;
+            }
+            Opcode::Sub { vx, vy } => {
+                let x = registers[vx as usize];
+                let y = registers[vy as usize];
+
+                let (result, overflow) = x.overflowing_sub(y);
+                registers[0xF] = !overflow as u8;
+                registers[vx as usize] = result;
+            }
+            Opcode::ShiftRight { vx } => {
+                let x = registers[vx as usize];
+
+                // LSB is set?
+                registers[0xF] = (x & 1 == 1) as u8;
+                registers[vx as usize] = x >> 1;
+            }
+            Opcode::Subn { vx, vy } => {
+                let x = registers[vx as usize];
+                let y = registers[vy as usize];
+
+                let (result, overflow) = y.overflowing_sub(x);
+                registers[0xF] = !overflow as u8;
+                registers[vx as usize] = result;
+            }
+            Opcode::ShiftLeft { vx } => {
+                let x = registers[vx as usize];
+
+                // MSB is set?
+                registers[0xF] = (x & (1 << (u8::BITS - 1)) > 0) as u8;
+                registers[vx as usize] = x << 1;
+            }
+            Opcode::SkipNotEquals { vx, vy } => {
+                let x = registers[vx as usize];
+                let y = registers[vy as usize];
+
+                if x != y {
+                    pc += 2;
+                }
+            }
             Opcode::LoadIndex { nnn } => {
                 index = nnn;
             }
+            Opcode::JumpPlusV0 { nnn } => {
+                pc = nnn + registers[0] as u16;
+            }
+            Opcode::Random { vx, nn } => {
+                let random = rng.gen::<u8>();
+                registers[vx as usize] = random & nn;
+            }
             Opcode::Draw { vx, vy, n } => {
-                let vx = registers[vx as usize];
-                let vy = registers[vy as usize];
+                let x = registers[vx as usize];
+                let y = registers[vy as usize];
 
                 let sprite = &memory[index as usize..(index as usize + n as usize)];
 
@@ -177,12 +273,64 @@ fn main() {
 
                 for (y_offset, row) in sprite.into_iter().enumerate() {
                     for (x_offset, bit) in byte_to_bits(*row).into_iter().enumerate() {
-                        let turned_off = screen.set(vx + x_offset as u8, vy + y_offset as u8, bit);
+                        let turned_off = screen.set(x + x_offset as u8, y + y_offset as u8, bit);
                         *vf |= turned_off as u8;
                     }
                 }
             }
-            opcode => unimplemented!("{opcode:?} is not yet implemented"),
+            Opcode::KeyPressSkip { vx } => {
+                let key = registers[vx as usize];
+                // TODO map between keycode and key
+                if window.is_key_down(Key::A) {
+                    pc += 2;
+                }
+            }
+            Opcode::KeyNotPressSkip { vx } => {
+                let key = registers[vx as usize];
+                // TODO map between keycode and key
+                if window.is_key_released(Key::A) {
+                    pc += 2;
+                }
+            }
+            Opcode::DelayTimerLoadFrom { vx } => {
+                registers[vx as usize] = delay_timer;
+            }
+            Opcode::KeyLoad { vx } => {
+                todo!("Implement keyload")
+            }
+            Opcode::DelayTimerLoadInto { vx } => {
+                delay_timer = registers[vx as usize];
+            }
+            Opcode::SoundLoad { vx } => {
+                sound_timer = registers[vx as usize];
+            }
+            Opcode::AddIndex { vx } => {
+                index += registers[vx as usize] as u16;
+            }
+            Opcode::LocateSprite { vx } => {
+                let sprite_number = registers[vx as usize];
+                index = FONT_OFFSET as u16 + sprite_number as u16 * FONT_SIZE as u16;
+            }
+            Opcode::LoadBcd { vx } => {
+                let x = registers[vx as usize];
+                let ones = x % 10;
+                let tens = x / 10 % 10;
+                let hundreds = x / 100 % 10;
+
+                memory[index as usize] = hundreds;
+                memory[index as usize + 1] = tens;
+                memory[index as usize + 2] = ones;
+            }
+            Opcode::StoreRegisters { vx } => {
+                let index = index as usize;
+                let vx = vx as usize;
+                memory[index..=vx].copy_from_slice(&registers[index..=vx]);
+            }
+            Opcode::ReadRegisters { vx } => {
+                let index = index as usize;
+                let vx = vx as usize;
+                registers[index..=vx].copy_from_slice(&memory[index..=vx]);
+            }
         };
 
         let framebuffer = screen
