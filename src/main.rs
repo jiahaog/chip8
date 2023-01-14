@@ -142,11 +142,20 @@ fn main() {
         pc += 2;
 
         match opcode {
+            Opcode::Sys(addr) => unimplemented!("SYS {addr} is unimplemented"),
             Opcode::Clear => {
                 screen.clear();
             }
+            Opcode::Return => {
+                let addr = stack.pop().unwrap();
+                pc = addr;
+            }
             Opcode::Jump(nnn) => {
                 pc = nnn;
+            }
+            Opcode::Call(addr) => {
+                stack.push(pc);
+                pc = addr;
             }
             Opcode::Set { vx, nn } => {
                 registers[vx as usize] = nn;
@@ -194,8 +203,11 @@ fn from_u8_rgb(r: u8, g: u8, b: u8) -> u32 {
 }
 
 enum Opcode {
+    Sys(u16),
     Clear,
+    Return,
     Jump(u16),
+    Call(u16),
     Set { vx: u8, nn: u8 },
     Add { vx: u8, nn: u8 },
     SetIndex(u16),
@@ -220,8 +232,14 @@ impl Opcode {
         match (ins, x, y, n, nn, nnn) {
             // 00E0
             (0x0, 0, 0xE, 0, _, _) => Opcode::Clear,
+            // 00EE
+            (0x0, 0, 0xE, 0xE, _, _) => Opcode::Return,
+            // 0NNN
+            (0x0, _, _, _, _, nnn) => Opcode::Sys(nnn),
             // 1NNN
             (0x1, _, _, _, _, nnn) => Opcode::Jump(nnn),
+            // 2NNN
+            (0x2, _, _, _, _, nnn) => Opcode::Call(nnn),
             // 6XNN
             (0x6, x, _, _, nn, _) => Opcode::Set { vx: x, nn },
             // 7XNN
