@@ -166,9 +166,9 @@ fn main() {
             Opcode::LoadIndex { nnn } => {
                 index = nnn;
             }
-            Opcode::Draw { x, y, n } => {
-                let vx = registers[x as usize];
-                let vy = registers[y as usize];
+            Opcode::Draw { vx, vy, n } => {
+                let vx = registers[vx as usize];
+                let vy = registers[vy as usize];
 
                 let sprite = &memory[index as usize..(index as usize + n as usize)];
 
@@ -252,7 +252,7 @@ enum Opcode {
     /// CXNN
     Random { vx: u8, nn: u8 },
     /// DXYN
-    Draw { x: u8, y: u8, n: u8 },
+    Draw { vx: u8, vy: u8, n: u8 },
 
     /// EX9E
     KeyPressSkip { vx: u8 },
@@ -308,10 +308,10 @@ impl Opcode {
             (0x0, _, _, _, _, nnn) => Opcode::Sys { nnn },
             (0x1, _, _, _, _, nnn) => Opcode::Jump { nnn },
             (0x2, _, _, _, _, nnn) => Opcode::Call { nnn },
-            (0x6, x, _, _, nn, _) => Opcode::Load { vx: x, nn },
-            (0x7, x, _, _, nn, _) => Opcode::AddConstant { vx: x, nn },
+            (0x6, vx, _, _, nn, _) => Opcode::Load { vx, nn },
+            (0x7, vx, _, _, nn, _) => Opcode::AddConstant { vx, nn },
             (0xA, _, _, _, _, nnn) => Opcode::LoadIndex { nnn },
-            (0xD, x, y, n, _, _) => Opcode::Draw { x, y, n },
+            (0xD, vx, vy, n, _, _) => Opcode::Draw { vx, vy, n },
             _ => unimplemented!("{:02X?} is unimplemented", num),
         }
     }
