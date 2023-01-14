@@ -206,6 +206,7 @@ fn main() {
             "[+{}ms] pc {pc} {opcode:?}",
             time_since_last_ins.as_millis()
         );
+
         pc += 2;
 
         match opcode {
@@ -407,6 +408,9 @@ fn main() {
         window
             .update_with_buffer(screen.framebuffer(), WIDTH, HEIGHT)
             .unwrap();
+
+        delay_timer -= if delay_timer > 0 { 1 } else { 0 };
+        sound_timer -= if sound_timer > 0 { 1 } else { 0 };
     }
 }
 
