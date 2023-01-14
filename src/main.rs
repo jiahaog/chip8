@@ -205,50 +205,85 @@ fn from_u8_rgb(r: u8, g: u8, b: u8) -> u32 {
 
 #[derive(Debug)]
 enum Opcode {
+    /// 0NNN
     Sys(u16),
+    /// 00E0
     Clear,
+    /// 00EE
     Return,
+    /// 1NNN
     Jump(u16),
+    /// 2NNN
     Call(u16),
+    /// 3XNN
     SkipEqualsConstant { vx: u8, nn: u8 },
+    /// 4XNN
     SkipNotEqualsConstant { vx: u8, nn: u8 },
+    /// 5XY0
     SkipEquals { vx: u8, vy: u8 },
+    /// 6XNN
     Load { vx: u8, nn: u8 },
+    /// 7XNN
     AddConstant { vx: u8, nn: u8 },
+    /// 8XY0
     LoadRegister { vx: u8, vy: u8 },
+    /// 8XY1
     Or { vx: u8, vy: u8 },
+    /// 8XY2
     And { vx: u8, vy: u8 },
+    /// 8XY3
     Xor { vx: u8, vy: u8 },
+    /// 8XY4
     Add { vx: u8, vy: u8 },
+    /// 8XY5
     Sub { vx: u8, vy: u8 },
+    /// 8XY6
     ShiftRight { vx: u8 },
+    /// 8XY7
     Subn { vx: u8, vy: u8 },
+    /// 8XYE
     ShiftLeft { vx: u8 },
+    /// 9XY0
     SkipNotEquals { vx: u8, vy: u8 },
+    /// ANNN
     LoadIndex { nnn: u16 },
+    /// BNNN
     JumpPlusV0 { nnn: u16 },
+    /// CXNN
     Random { vx: u8, nn: u8 },
+    /// DXYN
     Draw { x: u8, y: u8, n: u8 },
 
+    /// EX9E
     KeyPressSkip { vx: u8 },
+    /// EXA1
     KeyNotPressSkip { vx: u8 },
 
+    /// FX07
     DelayTimerLoadFrom { vx: u8 },
 
+    /// FX0A
     KeyLoad { vx: u8 },
 
+    /// FX15
     DelayTimerLoadInto { vx: u8 },
 
+    /// FX18
     SoundLoad { vx: u8 },
 
+    /// FX1E
     AddIndex { vx: u8 },
 
+    /// FX29
     LocateSprite { vx: u8 },
 
+    /// FX33
     LoadBcd { vx: u8 },
 
+    /// FX55
     StoreRegisters { vx: u8 },
 
+    /// FX65
     ReadRegisters { vx: u8 },
 }
 
@@ -268,23 +303,14 @@ impl Opcode {
         let nnn: u16 = num << 4 >> 4;
 
         match (ins, x, y, n, nn, nnn) {
-            // 00E0
             (0x0, 0, 0xE, 0, _, _) => Opcode::Clear,
-            // 00EE
             (0x0, 0, 0xE, 0xE, _, _) => Opcode::Return,
-            // 0NNN
             (0x0, _, _, _, _, nnn) => Opcode::Sys(nnn),
-            // 1NNN
             (0x1, _, _, _, _, nnn) => Opcode::Jump(nnn),
-            // 2NNN
             (0x2, _, _, _, _, nnn) => Opcode::Call(nnn),
-            // 6XNN
             (0x6, x, _, _, nn, _) => Opcode::Load { vx: x, nn },
-            // 7XNN
             (0x7, x, _, _, nn, _) => Opcode::AddConstant { vx: x, nn },
-            // ANNN
             (0xA, _, _, _, _, nnn) => Opcode::LoadIndex { nnn },
-            // DXYN
             (0xD, x, y, n, _, _) => Opcode::Draw { x, y, n },
             _ => unimplemented!("{:02X?} is unimplemented", num),
         }
