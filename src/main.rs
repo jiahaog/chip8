@@ -88,6 +88,65 @@ fn byte_to_bits(byte: u8) -> Vec<bool> {
     return (0..u8::BITS).rev().map(|i| byte >> i & 1 == 1).collect();
 }
 
+/// Maps the following keypad keys to a Key.
+///
+/// Expect keypad to be one of the following:
+/// ```
+/// 1 2 3 C
+/// 4 5 6 D
+/// 7 8 9 E
+/// A 0 B F
+/// ```
+///
+/// Which maps to a grid of keys on the keyboard, from number 1 on the top left
+/// to V on the bottom right.
+fn keypad_to_key(keypad: u8) -> Key {
+    // TODO: Implement with keycodes instead.
+
+    match keypad {
+        0x1 => Key::Key1,
+        0x2 => Key::Key2,
+        0x3 => Key::Key3,
+        0xC => Key::Key4,
+        0x4 => Key::Q,
+        0x5 => Key::W,
+        0x6 => Key::E,
+        0xD => Key::R,
+        0x7 => Key::A,
+        0x8 => Key::S,
+        0x9 => Key::D,
+        0xE => Key::F,
+        0xA => Key::Z,
+        0x0 => Key::X,
+        0xB => Key::C,
+        0xF => Key::V,
+        _ => panic!("Unknown key: {keypad}"),
+    }
+}
+
+/// Inversion of `keypad_to_key`.
+fn key_to_keypad(key: &Key) -> u8 {
+    match key {
+        Key::Key1 => 0x1,
+        Key::Key2 => 0x2,
+        Key::Key3 => 0x3,
+        Key::Key4 => 0xC,
+        Key::Q => 0x4,
+        Key::W => 0x5,
+        Key::E => 0x6,
+        Key::R => 0xD,
+        Key::A => 0x7,
+        Key::S => 0x8,
+        Key::D => 0x9,
+        Key::F => 0xE,
+        Key::Z => 0xA,
+        Key::X => 0x0,
+        Key::C => 0xB,
+        Key::V => 0xF,
+        _ => panic!("Unknown key: {key:?}"),
+    }
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
 
@@ -280,16 +339,14 @@ fn main() {
                 }
             }
             Opcode::KeyPressSkip { vx } => {
-                let key = registers[vx as usize];
-                // TODO map between keycode and key
-                if window.is_key_down(Key::A) {
+                let keypad = registers[vx as usize];
+                if window.is_key_down(keypad_to_key(keypad)) {
                     pc += 2;
                 }
             }
             Opcode::KeyNotPressSkip { vx } => {
-                let key = registers[vx as usize];
-                // TODO map between keycode and key
-                if window.is_key_released(Key::A) {
+                let keypad = registers[vx as usize];
+                if window.is_key_released(keypad_to_key(keypad)) {
                     pc += 2;
                 }
             }
@@ -297,7 +354,14 @@ fn main() {
                 registers[vx as usize] = delay_timer;
             }
             Opcode::KeyLoad { vx } => {
-                todo!("Implement keyload")
+                match window.get_keys_pressed(minifb::KeyRepeat::No).first() {
+                    // Move the PC back which should execute this instruction
+                    // again.
+                    None => pc -= 2,
+                    Some(key) => {
+                        registers[vx as usize] = key_to_keypad(key);
+                    }
+                }
             }
             Opcode::DelayTimerLoadInto { vx } => {
                 delay_timer = registers[vx as usize];
