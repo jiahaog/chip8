@@ -157,16 +157,16 @@ fn main() {
                 stack.push(pc);
                 pc = addr;
             }
-            Opcode::Set { vx, nn } => {
+            Opcode::Load { vx, nn } => {
                 registers[vx as usize] = nn;
             }
-            Opcode::Add { vx, nn } => {
+            Opcode::AddConstant { vx, nn } => {
                 registers[vx as usize] += nn;
             }
-            Opcode::SetIndex(nnn) => {
+            Opcode::LoadIndex { nnn } => {
                 index = nnn;
             }
-            Opcode::Display { x, y, n } => {
+            Opcode::Draw { x, y, n } => {
                 let vx = registers[x as usize];
                 let vy = registers[y as usize];
 
@@ -182,6 +182,7 @@ fn main() {
                     }
                 }
             }
+            opcode => unimplemented!("{opcode:?} is not yet implemented"),
         };
 
         let framebuffer = screen
@@ -202,16 +203,53 @@ fn from_u8_rgb(r: u8, g: u8, b: u8) -> u32 {
     (r << 16) | (g << 8) | b
 }
 
+#[derive(Debug)]
 enum Opcode {
     Sys(u16),
     Clear,
     Return,
     Jump(u16),
     Call(u16),
-    Set { vx: u8, nn: u8 },
-    Add { vx: u8, nn: u8 },
-    SetIndex(u16),
-    Display { x: u8, y: u8, n: u8 },
+    SkipEqualsConstant { vx: u8, nn: u8 },
+    SkipNotEqualsConstant { vx: u8, nn: u8 },
+    SkipEquals { vx: u8, vy: u8 },
+    Load { vx: u8, nn: u8 },
+    AddConstant { vx: u8, nn: u8 },
+    LoadRegister { vx: u8, vy: u8 },
+    Or { vx: u8, vy: u8 },
+    And { vx: u8, vy: u8 },
+    Xor { vx: u8, vy: u8 },
+    Add { vx: u8, vy: u8 },
+    Sub { vx: u8, vy: u8 },
+    ShiftRight { vx: u8 },
+    Subn { vx: u8, vy: u8 },
+    ShiftLeft { vx: u8 },
+    SkipNotEquals { vx: u8, vy: u8 },
+    LoadIndex { nnn: u16 },
+    JumpPlusV0 { nnn: u16 },
+    Random { vx: u8, nn: u8 },
+    Draw { x: u8, y: u8, n: u8 },
+
+    KeyPressSkip { vx: u8 },
+    KeyNotPressSkip { vx: u8 },
+
+    DelayTimerLoadFrom { vx: u8 },
+
+    KeyLoad { vx: u8 },
+
+    DelayTimerLoadInto { vx: u8 },
+
+    SoundLoad { vx: u8 },
+
+    AddIndex { vx: u8 },
+
+    LocateSprite { vx: u8 },
+
+    LoadBcd { vx: u8 },
+
+    StoreRegisters { vx: u8 },
+
+    ReadRegisters { vx: u8 },
 }
 
 impl Opcode {
@@ -241,13 +279,13 @@ impl Opcode {
             // 2NNN
             (0x2, _, _, _, _, nnn) => Opcode::Call(nnn),
             // 6XNN
-            (0x6, x, _, _, nn, _) => Opcode::Set { vx: x, nn },
+            (0x6, x, _, _, nn, _) => Opcode::Load { vx: x, nn },
             // 7XNN
-            (0x7, x, _, _, nn, _) => Opcode::Add { vx: x, nn },
+            (0x7, x, _, _, nn, _) => Opcode::AddConstant { vx: x, nn },
             // ANNN
-            (0xA, _, _, _, _, nnn) => Opcode::SetIndex(nnn),
+            (0xA, _, _, _, _, nnn) => Opcode::LoadIndex { nnn },
             // DXYN
-            (0xD, x, y, n, _, _) => Opcode::Display { x, y, n },
+            (0xD, x, y, n, _, _) => Opcode::Draw { x, y, n },
             _ => unimplemented!("{:02X?} is unimplemented", num),
         }
     }
