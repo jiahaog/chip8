@@ -1,6 +1,6 @@
 extern crate minifb;
 
-use std::{env, fs};
+use std::{env, fs, time::Instant};
 
 use minifb::{Key, Scale, Window, WindowOptions};
 use rand::{rngs::StdRng, Rng, SeedableRng};
@@ -40,17 +40,15 @@ const MEMORY_SIZE: usize = 4096;
 /// Offset in memory to insert a rom.
 const ROM_LOAD_OFFSET: usize = 512;
 
-fn copy_into_array(array: &mut [u8; MEMORY_SIZE], slice: &[u8], offset: usize) {
-    for (i, x) in slice.into_iter().enumerate() {
-        array[offset + i] = *x;
-    }
-}
+const PIXEL_COLOR: u32 = from_u8_rgb(0, 0, 255);
 
-struct Screen([[bool; WIDTH]; HEIGHT]);
+const FPS: f64 = 1. / 60.;
+
+struct Screen(Vec<u32>);
 
 impl Screen {
     fn new() -> Self {
-        Self([[false; WIDTH]; HEIGHT])
+        Self(vec![0; WIDTH * HEIGHT])
     }
 
     /// Sets the pixel value.
@@ -60,8 +58,9 @@ impl Screen {
         let x = x as usize % WIDTH;
         let y = y as usize % HEIGHT;
 
-        let current = &mut self.0[y][x];
-        let prev = *current;
+        let i = y * WIDTH + x;
+
+        let prev = self.0[i] == PIXEL_COLOR;
 
         // a b result  turned_off
         // 1 1 0       1
@@ -69,27 +68,19 @@ impl Screen {
         // 0 1 1       0
         // 0 0 0       0
 
-        *current ^= flip;
+        self.0[i] = if prev ^ flip { PIXEL_COLOR } else { 0 };
 
         prev & flip
     }
 
-    fn to_row(&self) -> [bool; WIDTH * HEIGHT] {
-        let mut result = [false; WIDTH * HEIGHT];
-
-        let mut i = 0;
-        for row in self.0 {
-            for value in row {
-                result[i] = value;
-                i += 1;
-            }
+    fn clear(&mut self) {
+        for x in &mut self.0 {
+            *x = 0;
         }
-
-        result
     }
 
-    fn clear(&mut self) {
-        self.0 = [[false; WIDTH]; HEIGHT];
+    fn framebuffer(&self) -> &Vec<u32> {
+        &self.0
     }
 }
 
@@ -141,11 +132,21 @@ fn main() {
         panic!("{}", e);
     });
 
-    // Limit to max ~60 fps update rate
-    window.limit_update_rate(Some(std::time::Duration::from_micros(16600)));
+    // This setting affects how long `window.update` will take to return.
+    window.limit_update_rate(Some(std::time::Duration::from_secs_f64(FPS)));
+
+    let mut last_ins_time = Instant::now();
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
+        let current_ins_time = Instant::now();
+        let time_since_last_ins = current_ins_time.duration_since(last_ins_time);
+        last_ins_time = current_ins_time;
+
         let opcode = Opcode::from([memory[pc as usize], memory[pc as usize + 1]]);
+        println!(
+            "[+{}ms] pc {pc} {opcode:?}",
+            time_since_last_ins.as_millis()
+        );
         pc += 2;
 
         match opcode {
@@ -333,20 +334,13 @@ fn main() {
             }
         };
 
-        let framebuffer = screen
-            .to_row()
-            .into_iter()
-            .map(|value| from_u8_rgb(0, 0, if value { 255 } else { 0 }))
-            .collect::<Vec<u32>>();
-
-        // We unwrap here as we want this code to exit if it fails. Real applications may want to handle this in a different way
         window
-            .update_with_buffer(&framebuffer, WIDTH, HEIGHT)
+            .update_with_buffer(screen.framebuffer(), WIDTH, HEIGHT)
             .unwrap();
     }
 }
 
-fn from_u8_rgb(r: u8, g: u8, b: u8) -> u32 {
+const fn from_u8_rgb(r: u8, g: u8, b: u8) -> u32 {
     let (r, g, b) = (r as u32, g as u32, b as u32);
     (r << 16) | (g << 8) | b
 }
