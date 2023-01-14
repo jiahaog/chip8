@@ -247,7 +247,9 @@ fn main() {
                 registers[vx as usize] = nn;
             }
             Opcode::AddConstant { vx, nn } => {
-                registers[vx as usize] += nn;
+                let x = registers[vx as usize];
+                let (result, _) = x.overflowing_add(nn);
+                registers[vx as usize] = result;
             }
             Opcode::LoadRegister { vx, vy } => {
                 registers[vx as usize] = registers[vy as usize];
@@ -389,12 +391,16 @@ fn main() {
             Opcode::StoreRegisters { vx } => {
                 let index = index as usize;
                 let vx = vx as usize;
-                memory[index..=vx].copy_from_slice(&registers[index..=vx]);
+                let upper = index + vx;
+
+                memory[index..=upper].copy_from_slice(&registers[..=vx]);
             }
             Opcode::ReadRegisters { vx } => {
                 let index = index as usize;
                 let vx = vx as usize;
-                registers[index..=vx].copy_from_slice(&memory[index..=vx]);
+                let upper = index + vx;
+
+                registers[..=vx].copy_from_slice(&memory[index..=upper]);
             }
         };
 
