@@ -34,7 +34,7 @@ impl Emulator {
             .for_each(|(i, char)| memory[FONT_OFFSET + i] = char);
 
         let mut window = Window::new(
-            "Test - ESC to exit",
+            "chip8 - Press ESC to exit",
             WIDTH,
             HEIGHT,
             WindowOptions {
