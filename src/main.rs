@@ -54,9 +54,9 @@ impl Screen {
     /// Sets the pixel value.
     ///
     /// Returns whether the pixel value at the current location was turned off.
-    fn set(&mut self, x: u8, y: u8, flip: bool) -> bool {
-        let x = x as usize % WIDTH;
-        let y = y as usize % HEIGHT;
+    fn set(&mut self, x: usize, y: usize, bit: bool) -> bool {
+        let x = x % WIDTH;
+        let y = y % HEIGHT;
 
         let i = y * WIDTH + x;
 
@@ -68,9 +68,9 @@ impl Screen {
         // 0 1 1       0
         // 0 0 0       0
 
-        self.0[i] = if prev ^ flip { PIXEL_COLOR } else { 0 };
+        self.0[i] = if prev ^ bit { PIXEL_COLOR } else { 0 };
 
-        prev & flip
+        prev & bit
     }
 
     fn clear(&mut self) {
@@ -336,7 +336,8 @@ fn main() {
 
                 for (y_offset, row) in sprite.into_iter().enumerate() {
                     for (x_offset, bit) in byte_to_bits(*row).into_iter().enumerate() {
-                        let turned_off = screen.set(x + x_offset as u8, y + y_offset as u8, bit);
+                        let turned_off =
+                            screen.set(x as usize + x_offset, y as usize + y_offset, bit);
                         *vf |= turned_off as u8;
                     }
                 }
