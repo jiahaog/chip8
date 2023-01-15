@@ -3,7 +3,8 @@ use minifb::Key;
 /// Maps the following keypad keys to a Key.
 ///
 /// Expect keypad to be one of the following:
-/// ```
+///
+/// ```txt
 /// 1 2 3 C
 /// 4 5 6 D
 /// 7 8 9 E
