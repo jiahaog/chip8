@@ -2,12 +2,11 @@ use crate::constant::*;
 use crate::keypad::Key;
 use crate::opcode::Opcode;
 use crate::screen::Screen;
-use crate::window::minifb::MinifbWindow;
 use crate::window::Window;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use std::time::Instant;
 
-pub struct Emulator {
+pub struct Emulator<T: Window> {
     memory: [u8; MEMORY_SIZE],
     registers: [u8; 16],
 
@@ -21,20 +20,18 @@ pub struct Emulator {
     rng: StdRng,
 
     screen: Screen,
-    window: Box<dyn Window>,
+    window: T,
 
     last_ins_time: Instant,
 }
 
-impl Emulator {
-    pub fn new() -> Self {
+impl<T: Window> Emulator<T> {
+    pub fn new(window: T) -> Self {
         let mut memory: [u8; MEMORY_SIZE] = [0; MEMORY_SIZE];
         FONTS
             .into_iter()
             .enumerate()
             .for_each(|(i, char)| memory[FONT_OFFSET + i] = char);
-
-        let window = MinifbWindow::new();
 
         Self {
             memory,
@@ -50,7 +47,7 @@ impl Emulator {
             registers: [0; 16],
 
             rng: StdRng::seed_from_u64(1),
-            window: Box::new(window),
+            window,
 
             last_ins_time: Instant::now(),
         }

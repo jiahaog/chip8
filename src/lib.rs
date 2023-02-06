@@ -7,3 +7,4 @@ mod screen;
 mod window;
 
 pub use emulator::Emulator;
+pub use window::minifb::MinifbWindow;
