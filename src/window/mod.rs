@@ -1,3 +1,4 @@
+use crate::constant::{HEIGHT, WIDTH};
 use crate::error::Error;
 use crate::keypad::Key;
 
@@ -13,5 +14,5 @@ pub trait Window {
 
     fn get_keys_pressed(&self) -> Vec<Key>;
 
-    fn update(&mut self, buffer: &Vec<bool>) -> Result<(), Error>;
+    fn update(&mut self, buffer: &[bool; WIDTH * HEIGHT]) -> Result<(), Error>;
 }

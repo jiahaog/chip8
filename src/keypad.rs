@@ -20,7 +20,8 @@ pub enum Key {
 impl Key {
     /// Maps the following keypad keys to a Key.
     ///
-    /// Expect keypad to be one of the following:
+    /// Keypad is expected to be one of the following, where these numbers are
+    /// used verbatim in the CHIP8 opcodes that interface with the keyboard.
     ///
     /// ```txt
     /// 1 2 3 C
@@ -29,8 +30,8 @@ impl Key {
     /// A 0 B F
     /// ```
     ///
-    /// Which maps to a grid of keys on the keyboard, from number 1 on the top left
-    /// to V on the bottom right.
+    /// The grid above maps to a grid of keys on the keyboard, from the `1` key
+    /// on the top left to the `V` key on the bottom right.
     pub fn from(keypad: u8) -> Self {
         // TODO: Implement with keycodes instead.
         match keypad {

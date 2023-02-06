@@ -1,19 +1,25 @@
+//! Implementation of [crate::window::Window] using [minifb].
+//!
+//! This should be the only file in this crate which depends on [minifb].
+
+use std::time::Duration;
+
 use crate::constant::{FPS, HEIGHT, WIDTH};
 use crate::error::Error;
 use crate::keypad::Key;
-use crate::window::Window;
+use minifb::{KeyRepeat, Scale, Window, WindowOptions};
 
-pub struct MinifbWindow(minifb::Window);
+pub struct MinifbWindow(Window);
 
 impl MinifbWindow {
     pub fn new() -> Self {
-        let mut window = minifb::Window::new(
+        let mut window = Window::new(
             "chip8 - Press ESC to exit",
             WIDTH,
             HEIGHT,
-            minifb::WindowOptions {
-                scale: minifb::Scale::X8,
-                ..minifb::WindowOptions::default()
+            WindowOptions {
+                scale: Scale::X8,
+                ..WindowOptions::default()
             },
         )
         .unwrap_or_else(|e| {
@@ -21,7 +27,7 @@ impl MinifbWindow {
         });
 
         // This setting affects how long `window.update` will take to return.
-        window.limit_update_rate(Some(std::time::Duration::from_secs_f64(FPS)));
+        window.limit_update_rate(Some(Duration::from_secs_f64(FPS)));
 
         Self(window)
     }
@@ -29,7 +35,7 @@ impl MinifbWindow {
 
 const PIXEL_COLOR: u32 = u32::MAX;
 
-impl Window for MinifbWindow {
+impl crate::window::Window for MinifbWindow {
     fn is_running(&self) -> bool {
         self.0.is_open() && !self.0.is_key_down(minifb::Key::Escape)
     }
@@ -44,13 +50,13 @@ impl Window for MinifbWindow {
 
     fn get_keys_pressed(&self) -> Vec<Key> {
         self.0
-            .get_keys_pressed(minifb::KeyRepeat::No)
+            .get_keys_pressed(KeyRepeat::No)
             .into_iter()
             .map(|key| key.into())
             .collect()
     }
 
-    fn update(&mut self, buffer: &Vec<bool>) -> Result<(), Error> {
+    fn update(&mut self, buffer: &[bool; WIDTH * HEIGHT]) -> Result<(), Error> {
         let buffer = buffer
             .into_iter()
             .map(|on| if *on { PIXEL_COLOR } else { 0 })

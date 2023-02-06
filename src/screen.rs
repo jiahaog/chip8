@@ -1,10 +1,10 @@
 use crate::constant::*;
 
-pub struct Screen(Vec<bool>);
+pub struct Screen([bool; WIDTH * HEIGHT]);
 
 impl Screen {
     pub fn new() -> Self {
-        Self(vec![false; WIDTH * HEIGHT])
+        Self([false; WIDTH * HEIGHT])
     }
 
     /// Sets the pixel value.
@@ -35,7 +35,7 @@ impl Screen {
         }
     }
 
-    pub fn framebuffer(&self) -> &Vec<bool> {
+    pub fn framebuffer(&self) -> &[bool; WIDTH * HEIGHT] {
         &self.0
     }
 }
