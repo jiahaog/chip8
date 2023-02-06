@@ -33,6 +33,4 @@ pub const MEMORY_SIZE: usize = 4096;
 /// Offset in memory to insert a rom.
 pub const ROM_LOAD_OFFSET: usize = 512;
 
-pub const PIXEL_COLOR: u32 = u32::MAX;
-
 pub const FPS: f64 = 1. / 60.;

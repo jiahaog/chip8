@@ -1,10 +1,10 @@
 use crate::constant::*;
 
-pub struct Screen(Vec<u32>);
+pub struct Screen(Vec<bool>);
 
 impl Screen {
     pub fn new() -> Self {
-        Self(vec![0; WIDTH * HEIGHT])
+        Self(vec![false; WIDTH * HEIGHT])
     }
 
     /// Sets the pixel value.
@@ -16,7 +16,7 @@ impl Screen {
 
         let i = y * WIDTH + x;
 
-        let prev = self.0[i] == PIXEL_COLOR;
+        let prev = self.0[i];
 
         // a b result  turned_off
         // 1 1 0       1
@@ -24,18 +24,18 @@ impl Screen {
         // 0 1 1       0
         // 0 0 0       0
 
-        self.0[i] = if prev ^ bit { PIXEL_COLOR } else { 0 };
+        self.0[i] = prev ^ bit;
 
         prev & bit
     }
 
     pub fn clear(&mut self) {
         for x in &mut self.0 {
-            *x = 0;
+            *x = false;
         }
     }
 
-    pub fn framebuffer(&self) -> &Vec<u32> {
+    pub fn framebuffer(&self) -> &Vec<bool> {
         &self.0
     }
 }

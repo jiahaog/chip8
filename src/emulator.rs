@@ -1,8 +1,9 @@
 use crate::constant::*;
-use crate::keypad::{key_to_keypad, keypad_to_key};
+use crate::keypad::Key;
 use crate::opcode::Opcode;
 use crate::screen::Screen;
-use minifb::{Key, Scale, Window, WindowOptions};
+use crate::window::minifb::MinifbWindow;
+use crate::window::Window;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use std::time::Instant;
 
@@ -20,7 +21,7 @@ pub struct Emulator {
     rng: StdRng,
 
     screen: Screen,
-    window: Window,
+    window: Box<dyn Window>,
 
     last_ins_time: Instant,
 }
@@ -33,21 +34,7 @@ impl Emulator {
             .enumerate()
             .for_each(|(i, char)| memory[FONT_OFFSET + i] = char);
 
-        let mut window = Window::new(
-            "chip8 - Press ESC to exit",
-            WIDTH,
-            HEIGHT,
-            WindowOptions {
-                scale: Scale::X8,
-                ..WindowOptions::default()
-            },
-        )
-        .unwrap_or_else(|e| {
-            panic!("{}", e);
-        });
-
-        // This setting affects how long `window.update` will take to return.
-        window.limit_update_rate(Some(std::time::Duration::from_secs_f64(FPS)));
+        let window = MinifbWindow::new();
 
         Self {
             memory,
@@ -63,7 +50,7 @@ impl Emulator {
             registers: [0; 16],
 
             rng: StdRng::seed_from_u64(1),
-            window,
+            window: Box::new(window),
 
             last_ins_time: Instant::now(),
         }
@@ -73,7 +60,7 @@ impl Emulator {
     }
 
     pub fn start(&mut self) {
-        while self.window.is_open() && !self.window.is_key_down(Key::Escape) {
+        while self.window.is_running() {
             let current_ins_time = Instant::now();
             let time_since_last_ins = current_ins_time.duration_since(self.last_ins_time);
             self.last_ins_time = current_ins_time;
@@ -227,13 +214,13 @@ impl Emulator {
                 }
                 Opcode::KeyPressSkip { vx } => {
                     let keypad = self.registers[vx as usize];
-                    if self.window.is_key_down(keypad_to_key(keypad)) {
+                    if self.window.is_key_down(Key::from(keypad)) {
                         self.pc += 2;
                     }
                 }
                 Opcode::KeyNotPressSkip { vx } => {
                     let keypad = self.registers[vx as usize];
-                    if self.window.is_key_released(keypad_to_key(keypad)) {
+                    if self.window.is_key_up(Key::from(keypad)) {
                         self.pc += 2;
                     }
                 }
@@ -241,13 +228,11 @@ impl Emulator {
                     self.registers[vx as usize] = self.delay_timer;
                 }
                 Opcode::KeyLoad { vx } => {
-                    match self.window.get_keys_pressed(minifb::KeyRepeat::No).first() {
+                    match self.window.get_keys_pressed().first() {
                         // Move the PC back which should execute this instruction
                         // again.
                         None => self.pc -= 2,
-                        Some(key) => {
-                            self.registers[vx as usize] = key_to_keypad(key);
-                        }
+                        Some(key) => self.registers[vx as usize] = key.to_keypad(),
                     }
                 }
                 Opcode::DelayTimerLoadInto { vx } => {
@@ -289,9 +274,7 @@ impl Emulator {
                 }
             };
 
-            self.window
-                .update_with_buffer(self.screen.framebuffer(), WIDTH, HEIGHT)
-                .unwrap();
+            self.window.update(self.screen.framebuffer()).unwrap();
 
             self.delay_timer -= if self.delay_timer > 0 { 1 } else { 0 };
             self.sound_timer -= if self.sound_timer > 0 { 1 } else { 0 };
