@@ -6,7 +6,7 @@ use crate::window::Window;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use std::time::Instant;
 
-pub struct Emulator<T: Window> {
+pub struct Emulator {
     memory: [u8; MEMORY_SIZE],
     verbose: bool,
     registers: [u8; 16],
@@ -21,13 +21,13 @@ pub struct Emulator<T: Window> {
     rng: StdRng,
 
     screen: Screen,
-    window: T,
+    window: Box<dyn Window + 'static>,
 
     last_ins_time: Instant,
 }
 
-impl<T: Window> Emulator<T> {
-    pub fn new(window: T, verbose: bool) -> Self {
+impl Emulator {
+    pub fn new(window: Box<dyn Window + 'static>, verbose: bool) -> Self {
         let mut memory: [u8; MEMORY_SIZE] = [0; MEMORY_SIZE];
         FONTS
             .into_iter()
