@@ -13,18 +13,22 @@ use crate::constant::{FPS, HEIGHT, WIDTH};
 use crate::error::Error;
 use crate::keypad::Key;
 use crate::window::Window;
-use crossterm::cursor;
+use crossterm::cursor::Hide;
+use crossterm::cursor::MoveTo;
+use crossterm::cursor::Show;
 use crossterm::event::read;
 use crossterm::event::Event;
 use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
 use crossterm::event::KeyModifiers;
-use crossterm::style;
-use crossterm::terminal;
+use crossterm::style::Print;
+use crossterm::terminal::disable_raw_mode;
+use crossterm::terminal::enable_raw_mode;
 use crossterm::terminal::Clear;
 use crossterm::terminal::ClearType;
 use crossterm::terminal::EnterAlternateScreen;
 use crossterm::terminal::LeaveAlternateScreen;
+use crossterm::ErrorKind;
 use crossterm::ExecutableCommand;
 use crossterm::QueueableCommand;
 
@@ -39,9 +43,9 @@ impl TerminalWindow {
 
         // This causes the terminal to be output on an alternate buffer.
         stdout.execute(EnterAlternateScreen).unwrap();
-        stdout.execute(crossterm::cursor::Hide).unwrap();
+        stdout.execute(Hide).unwrap();
 
-        terminal::enable_raw_mode().unwrap();
+        enable_raw_mode().unwrap();
 
         Self {
             stdout,
@@ -65,8 +69,8 @@ impl Window for TerminalWindow {
 
         if event == Event::Key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL)) {
             // Be a good citizen and restore the previous terminal.
-            terminal::disable_raw_mode().unwrap();
-            self.stdout.execute(crossterm::cursor::Show).unwrap();
+            disable_raw_mode().unwrap();
+            self.stdout.execute(Show).unwrap();
             self.stdout.execute(LeaveAlternateScreen).unwrap();
             false
         } else {
@@ -76,7 +80,7 @@ impl Window for TerminalWindow {
 
     fn is_key_down(&self, key: Key) -> bool {
         match read().unwrap() {
-            crossterm::event::Event::Key(received) => {
+            Event::Key(received) => {
                 if let Ok(received_key) = Key::try_from(received) {
                     received_key == key
                 } else {
@@ -96,7 +100,7 @@ impl Window for TerminalWindow {
 
     fn wait_for_next_key(&self) -> Option<Key> {
         match read().unwrap() {
-            crossterm::event::Event::Key(received) => {
+            Event::Key(received) => {
                 if let Ok(received_key) = Key::try_from(received) {
                     Some(received_key)
                 } else {
@@ -177,9 +181,9 @@ impl Window for TerminalWindow {
 
         for (i, (prev, current)) in zip(&self.lines, &lines).enumerate() {
             if prev != current {
-                self.stdout.queue(cursor::MoveTo(0, i as u16))?;
+                self.stdout.queue(MoveTo(0, i as u16))?;
                 self.stdout.queue(Clear(ClearType::CurrentLine))?;
-                self.stdout.queue(style::Print(current))?;
+                self.stdout.queue(Print(current))?;
             }
         }
 
@@ -193,10 +197,10 @@ impl Window for TerminalWindow {
     }
 }
 
-impl TryFrom<crossterm::event::KeyEvent> for Key {
+impl TryFrom<KeyEvent> for Key {
     type Error = ();
 
-    fn try_from(event: crossterm::event::KeyEvent) -> Result<Self, Self::Error> {
+    fn try_from(event: KeyEvent) -> Result<Self, Self::Error> {
         use crossterm::event::KeyCode::*;
         match event.code {
             Char('1') => Ok(Key::Key1),
@@ -225,8 +229,8 @@ const BLOCK_UPPER: char = '▀';
 const BLOCK_FULL: char = '█';
 const BLOCK_EMPTY: char = ' ';
 
-impl From<crossterm::ErrorKind> for Error {
-    fn from(value: crossterm::ErrorKind) -> Self {
+impl From<ErrorKind> for Error {
+    fn from(value: ErrorKind) -> Self {
         Error::ErrorStr(value.to_string())
     }
 }
