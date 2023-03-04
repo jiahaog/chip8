@@ -66,6 +66,7 @@ impl Window for TerminalWindow {
         if event == Event::Key(KeyEvent::new(KeyCode::Char('c'), KeyModifiers::CONTROL)) {
             // Be a good citizen and restore the previous terminal.
             terminal::disable_raw_mode().unwrap();
+            self.stdout.execute(crossterm::cursor::Show).unwrap();
             self.stdout.execute(LeaveAlternateScreen).unwrap();
             false
         } else {
