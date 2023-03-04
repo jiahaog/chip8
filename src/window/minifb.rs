@@ -52,7 +52,8 @@ impl crate::window::Window for MinifbWindow {
         self.0
             .get_keys_pressed(KeyRepeat::No)
             .into_iter()
-            .map(|key| key.into())
+            .map(|key| Key::try_from(key))
+            .filter_map(|key| key.ok())
             .nth(0)
     }
 
@@ -68,26 +69,28 @@ impl crate::window::Window for MinifbWindow {
     }
 }
 
-impl From<minifb::Key> for Key {
-    fn from(key: minifb::Key) -> Self {
+impl TryFrom<minifb::Key> for Key {
+    type Error = ();
+
+    fn try_from(key: minifb::Key) -> Result<Self, Self::Error> {
         match key {
-            minifb::Key::Key1 => Key::Key1,
-            minifb::Key::Key2 => Key::Key2,
-            minifb::Key::Key3 => Key::Key3,
-            minifb::Key::Key4 => Key::Key4,
-            minifb::Key::Q => Key::Q,
-            minifb::Key::W => Key::W,
-            minifb::Key::E => Key::E,
-            minifb::Key::R => Key::R,
-            minifb::Key::A => Key::A,
-            minifb::Key::S => Key::S,
-            minifb::Key::D => Key::D,
-            minifb::Key::F => Key::F,
-            minifb::Key::Z => Key::Z,
-            minifb::Key::X => Key::X,
-            minifb::Key::C => Key::C,
-            minifb::Key::V => Key::V,
-            x => panic!("Unknown key {:?}", x),
+            minifb::Key::Key1 => Ok(Key::Key1),
+            minifb::Key::Key2 => Ok(Key::Key2),
+            minifb::Key::Key3 => Ok(Key::Key3),
+            minifb::Key::Key4 => Ok(Key::Key4),
+            minifb::Key::Q => Ok(Key::Q),
+            minifb::Key::W => Ok(Key::W),
+            minifb::Key::E => Ok(Key::E),
+            minifb::Key::R => Ok(Key::R),
+            minifb::Key::A => Ok(Key::A),
+            minifb::Key::S => Ok(Key::S),
+            minifb::Key::D => Ok(Key::D),
+            minifb::Key::F => Ok(Key::F),
+            minifb::Key::Z => Ok(Key::Z),
+            minifb::Key::X => Ok(Key::X),
+            minifb::Key::C => Ok(Key::C),
+            minifb::Key::V => Ok(Key::V),
+            _ => Err(()),
         }
     }
 }

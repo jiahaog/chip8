@@ -75,7 +75,13 @@ impl Window for TerminalWindow {
 
     fn is_key_down(&self, key: Key) -> bool {
         match read().unwrap() {
-            crossterm::event::Event::Key(received) => key == received.into(),
+            crossterm::event::Event::Key(received) => {
+                if let Ok(received_key) = Key::try_from(received) {
+                    received_key == key
+                } else {
+                    false
+                }
+            }
             _ => false,
         }
     }
@@ -89,7 +95,13 @@ impl Window for TerminalWindow {
 
     fn wait_for_next_key(&self) -> Option<Key> {
         match read().unwrap() {
-            crossterm::event::Event::Key(received) => Some(received.into()),
+            crossterm::event::Event::Key(received) => {
+                if let Ok(received_key) = Key::try_from(received) {
+                    Some(received_key)
+                } else {
+                    None
+                }
+            }
             _ => None,
         }
     }
@@ -180,27 +192,29 @@ impl Window for TerminalWindow {
     }
 }
 
-impl From<crossterm::event::KeyEvent> for Key {
-    fn from(key: crossterm::event::KeyEvent) -> Self {
+impl TryFrom<crossterm::event::KeyEvent> for Key {
+    type Error = ();
+
+    fn try_from(event: crossterm::event::KeyEvent) -> Result<Self, Self::Error> {
         use crossterm::event::KeyCode::*;
-        match key.code {
-            Char('1') => Key::Key1,
-            Char('2') => Key::Key2,
-            Char('3') => Key::Key3,
-            Char('4') => Key::Key4,
-            Char('q') => Key::Q,
-            Char('w') => Key::W,
-            Char('e') => Key::E,
-            Char('r') => Key::R,
-            Char('a') => Key::A,
-            Char('s') => Key::S,
-            Char('d') => Key::D,
-            Char('f') => Key::F,
-            Char('z') => Key::Z,
-            Char('x') => Key::X,
-            Char('c') => Key::C,
-            Char('v') => Key::V,
-            x => panic!("Unknown key {:?}", x),
+        match event.code {
+            Char('1') => Ok(Key::Key1),
+            Char('2') => Ok(Key::Key2),
+            Char('3') => Ok(Key::Key3),
+            Char('4') => Ok(Key::Key4),
+            Char('q') => Ok(Key::Q),
+            Char('w') => Ok(Key::W),
+            Char('e') => Ok(Key::E),
+            Char('r') => Ok(Key::R),
+            Char('a') => Ok(Key::A),
+            Char('s') => Ok(Key::S),
+            Char('d') => Ok(Key::D),
+            Char('f') => Ok(Key::F),
+            Char('z') => Ok(Key::Z),
+            Char('x') => Ok(Key::X),
+            Char('c') => Ok(Key::C),
+            Char('v') => Ok(Key::V),
+            _ => Err(()),
         }
     }
 }
