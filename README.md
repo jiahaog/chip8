@@ -7,7 +7,7 @@ Emulator for [CHIP-8](https://en.wikipedia.org/wiki/CHIP-8).
 With the Rust toolchain [installed](https://www.rust-lang.org/tools/install):
 
 ```sh
-cargo run -- $PATH_TO_ROM
+cargo run -- --rom $PATH_TO_ROM
 ```
 
 (tested only on Linux)
@@ -39,7 +39,7 @@ TODO: Use keycodes instead of string constants.
 Manually only for now.
 
 ```sh
-cargo run -- roms/maze.ch8
+cargo run -- --rom roms/maze.ch8
 ```
 
 This should show the following image after it is stable:
