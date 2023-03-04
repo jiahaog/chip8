@@ -8,3 +8,4 @@ mod window;
 
 pub use emulator::Emulator;
 pub use window::minifb::MinifbWindow;
+pub use window::terminal::TerminalWindow;

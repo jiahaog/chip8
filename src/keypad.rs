@@ -1,3 +1,4 @@
+#[derive(PartialEq, Eq)]
 pub enum Key {
     Key1,
     Key2,

@@ -8,6 +8,7 @@ use std::time::Instant;
 
 pub struct Emulator<T: Window> {
     memory: [u8; MEMORY_SIZE],
+    verbose: bool,
     registers: [u8; 16],
 
     pc: u16,
@@ -26,7 +27,7 @@ pub struct Emulator<T: Window> {
 }
 
 impl<T: Window> Emulator<T> {
-    pub fn new(window: T) -> Self {
+    pub fn new(window: T, verbose: bool) -> Self {
         let mut memory: [u8; MEMORY_SIZE] = [0; MEMORY_SIZE];
         FONTS
             .into_iter()
@@ -36,6 +37,7 @@ impl<T: Window> Emulator<T> {
         Self {
             memory,
             screen: Screen::new(),
+            verbose,
             // max pc is actually u12 (from nnn which is 12 bytes).
             pc: ROM_LOAD_OFFSET as u16,
             index: 0,
@@ -58,19 +60,21 @@ impl<T: Window> Emulator<T> {
 
     pub fn start(&mut self) {
         while self.window.is_running() {
-            let current_ins_time = Instant::now();
-            let time_since_last_ins = current_ins_time.duration_since(self.last_ins_time);
-            self.last_ins_time = current_ins_time;
-
             let opcode = Opcode::from([
                 self.memory[self.pc as usize],
                 self.memory[self.pc as usize + 1],
             ]);
-            println!(
-                "[+{}ms] pc {} {opcode:?}",
-                time_since_last_ins.as_millis(),
-                self.pc,
-            );
+
+            if self.verbose {
+                let current_ins_time = Instant::now();
+                self.last_ins_time = current_ins_time;
+                let time_since_last_ins = current_ins_time.duration_since(self.last_ins_time);
+                println!(
+                    "[+{}ms] pc {} {opcode:?}",
+                    time_since_last_ins.as_millis(),
+                    self.pc,
+                );
+            }
 
             self.pc += 2;
 

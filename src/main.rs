@@ -1,5 +1,6 @@
 use chip8::Emulator;
 use chip8::MinifbWindow;
+use chip8::TerminalWindow;
 use std::{env, fs, process::exit};
 
 const EX_USAGE: i32 = 64;
@@ -17,7 +18,7 @@ fn main() {
 
     let rom = fs::read(rom_path).unwrap();
 
-    let mut emulator = Emulator::new(MinifbWindow::new());
+    let mut emulator = Emulator::new(TerminalWindow::new(), false);
     emulator.load_rom(rom);
 
     emulator.start();

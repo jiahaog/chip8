@@ -36,7 +36,7 @@ impl MinifbWindow {
 const PIXEL_COLOR: u32 = u32::MAX;
 
 impl crate::window::Window for MinifbWindow {
-    fn is_running(&self) -> bool {
+    fn is_running(&mut self) -> bool {
         self.0.is_open() && !self.0.is_key_down(minifb::Key::Escape)
     }
 
