@@ -13,8 +13,7 @@ pub trait Window {
 
     fn is_key_up(&self, key: Key) -> bool;
 
-    // TODO: Change this to return a single key. Rename to blocking read or something
-    fn get_keys_pressed(&self) -> Vec<Key>;
+    fn wait_for_next_key(&self) -> Option<Key>;
 
     fn update(&mut self, buffer: &[bool; WIDTH * HEIGHT]) -> Result<(), Error>;
 }

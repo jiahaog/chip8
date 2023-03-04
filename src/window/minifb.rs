@@ -48,12 +48,12 @@ impl crate::window::Window for MinifbWindow {
         self.0.is_key_released(key.into())
     }
 
-    fn get_keys_pressed(&self) -> Vec<Key> {
+    fn wait_for_next_key(&self) -> Option<Key> {
         self.0
             .get_keys_pressed(KeyRepeat::No)
             .into_iter()
             .map(|key| key.into())
-            .collect()
+            .nth(0)
     }
 
     fn update(&mut self, buffer: &[bool; WIDTH * HEIGHT]) -> Result<(), Error> {

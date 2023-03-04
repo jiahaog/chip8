@@ -83,15 +83,14 @@ impl Window for TerminalWindow {
     fn is_key_up(&self, key: Key) -> bool {
         // This doesn't exactly match the semantics of the method, but I guess
         // it's good enough for now.
-        self.get_keys_pressed()
-            .into_iter()
-            .all(|received| key != received)
+        self.wait_for_next_key()
+            .map_or(true, |received| key != received)
     }
 
-    fn get_keys_pressed(&self) -> Vec<Key> {
+    fn wait_for_next_key(&self) -> Option<Key> {
         match read().unwrap() {
-            crossterm::event::Event::Key(received) => vec![received.into()],
-            _ => vec![],
+            crossterm::event::Event::Key(received) => Some(received.into()),
+            _ => None,
         }
     }
 

@@ -229,7 +229,7 @@ impl<T: Window> Emulator<T> {
                     self.registers[vx as usize] = self.delay_timer;
                 }
                 Opcode::KeyLoad { vx } => {
-                    match self.window.get_keys_pressed().first() {
+                    match self.window.wait_for_next_key() {
                         // Move the PC back which should execute this instruction
                         // again.
                         None => self.pc -= 2,
