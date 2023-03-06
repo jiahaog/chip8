@@ -1,16 +1,22 @@
 # chip8
 
-Emulator for [CHIP-8](https://en.wikipedia.org/wiki/CHIP-8).
+Basic emulator for [CHIP-8](https://en.wikipedia.org/wiki/CHIP-8).
+
+Supports output to the current terminal, or alternatively to a separate window with the `--renderer=window` option.
+
+(Tested only on Linux, but in theory the code should be cross-platform)
 
 ## Usage
 
 With the Rust toolchain [installed](https://www.rust-lang.org/tools/install):
 
 ```sh
-cargo run -- --rom $PATH_TO_ROM
+cargo run --quiet -- --rom $PATH_TO_ROM
 ```
 
-(tested only on Linux)
+### Example
+
+[![asciicast of running roms/maze.ch8](https://asciinema.org/a/NFhBwTN7Ee7WT0JyRIhEuY6fg.svg)](https://asciinema.org/a/NFhBwTN7Ee7WT0JyRIhEuY6fg)
 
 ## Controls
 
@@ -32,19 +38,11 @@ to the hex keypad keys expected by CHIP-8 programs:
 A	0	B	F
 ```
 
-TODO: Use keycodes instead of string constants.
+## Missing Pieces
 
-## Testing
-
-Manually only for now.
-
-```sh
-cargo run -- --rom roms/maze.ch8
-```
-
-This should show the following image after it is stable:
-
-![Image showing the output of loading roms/maze.ch8](maze.png)
+- Tests
+- Things like timings / inputs might be weird
+- Sound
 
 ## References
 
